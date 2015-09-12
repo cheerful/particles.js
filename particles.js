@@ -1,3 +1,12 @@
+/*
+  TF 2015/09/12:
+  MODIFIED FROM THE ORIGINAL, DO NOT REPLACE
+  
+  - uses some Prototype.js speific code to work for Freckle 
+  - adds rotation animation (no config, hardcoded)
+  - specifically is tuned for using 5-sided stars
+*/
+
 /* -----------------------------------------------
 /* Author : Vincent Garreau  - vincentgarreau.com
 /* MIT license: http://opensource.org/licenses/MIT
@@ -9,7 +18,7 @@
 
 var pJS = function(tag_id, params){
 
-  var canvas_el = document.querySelector('#'+tag_id+' > .particles-js-canvas-el');
+  var canvas_el = tag_id.down('.particles-js-canvas-el');
 
   /* particles.js variables with default values */
   this.pJS = {
@@ -157,9 +166,9 @@ var pJS = function(tag_id, params){
   pJS.fn.retinaInit = function(){
 
     if(pJS.retina_detect && window.devicePixelRatio > 1){
-      pJS.canvas.pxratio = window.devicePixelRatio; 
+      pJS.canvas.pxratio = window.devicePixelRatio;
       pJS.tmp.retina = true;
-    } 
+    }
     else{
       pJS.canvas.pxratio = 1;
       pJS.tmp.retina = false;
@@ -249,6 +258,9 @@ var pJS = function(tag_id, params){
         this.vs = this.vs * Math.random();
       }
     }
+
+    this.angularSpeed = Math.random()*0.2 - 0.1;
+    this.angle = Math.random()*200;
 
     /* position */
     this.x = position ? position.x : Math.random() * pJS.canvas.w;
@@ -352,7 +364,7 @@ var pJS = function(tag_id, params){
         this.vy = this.vy * (Math.random());
       }
     }else{
-      this.vx = velbase.x + Math.random()-0.5;
+      this.vx = velbase.x + Math.random()*0.2-0.2;
       this.vy = velbase.y + Math.random()-0.5;
     }
 
@@ -363,7 +375,7 @@ var pJS = function(tag_id, params){
     this.vx_i = this.vx;
     this.vy_i = this.vy;
 
-    
+
 
     /* if shape is image */
 
@@ -392,7 +404,7 @@ var pJS = function(tag_id, params){
       }
     }
 
-    
+
 
   };
 
@@ -402,7 +414,7 @@ var pJS = function(tag_id, params){
     var p = this;
 
     if(p.radius_bubble != undefined){
-      var radius = p.radius_bubble; 
+      var radius = p.radius_bubble;
     }else{
       var radius = p.radius;
     }
@@ -454,7 +466,8 @@ var pJS = function(tag_id, params){
           p.y - radius / (2*2.66/3.5), // startY
           radius*2*2.66 / (pJS.particles.shape.polygon.nb_sides/3), // sideLength
           pJS.particles.shape.polygon.nb_sides, // sideCountNumerator
-          2 // sideCountDenominator
+          2, // sideCountDenominator
+          p.angle
         );
       break;
 
@@ -491,9 +504,9 @@ var pJS = function(tag_id, params){
       pJS.canvas.ctx.lineWidth = pJS.particles.shape.stroke.width;
       pJS.canvas.ctx.stroke();
     }
-    
+
     pJS.canvas.ctx.fill();
-    
+
   };
 
 
@@ -549,6 +562,8 @@ var pJS = function(tag_id, params){
         if(p.radius < 0) p.radius = 0;
       }
 
+      p.angle += p.angularSpeed;
+
       /* change particle position if it is out of canvas */
       if(pJS.particles.move.out_mode == 'bounce'){
         var new_pos = {
@@ -562,7 +577,7 @@ var pJS = function(tag_id, params){
           x_left: -p.radius,
           x_right: pJS.canvas.w + p.radius,
           y_top: -p.radius,
-          y_bottom: pJS.canvas.h + p.radius
+          y_bottom: pJS.canvas.h + p.radius + 20
         }
       }
 
@@ -574,7 +589,7 @@ var pJS = function(tag_id, params){
         p.x = new_pos.x_right;
         p.y = Math.random() * pJS.canvas.h;
       }
-      if(p.y - p.radius > pJS.canvas.h){
+      if(p.y - p.radius > (pJS.canvas.h+20)){
         p.y = new_pos.y_top;
         p.x = Math.random() * pJS.canvas.w;
       }
@@ -664,9 +679,22 @@ var pJS = function(tag_id, params){
     pJS.tmp.count_svg = 0;
     pJS.fn.particlesEmpty();
     pJS.fn.canvasClear();
-    
+
     /* restart */
     pJS.fn.vendors.start();
+
+  };
+
+  pJS.fn.stop = function(){
+
+    /* init all */
+    cancelRequestAnimFrame(pJS.fn.checkAnimFrame);
+    cancelRequestAnimFrame(pJS.fn.drawAnimFrame);
+    pJS.tmp.source_svg = undefined;
+    pJS.tmp.img_obj = undefined;
+    pJS.tmp.count_svg = 0;
+    pJS.fn.particlesEmpty();
+    pJS.fn.canvasClear();
 
   };
 
@@ -684,14 +712,14 @@ var pJS = function(tag_id, params){
 
       var opacity_line = pJS.particles.line_linked.opacity - (dist / (1/pJS.particles.line_linked.opacity)) / pJS.particles.line_linked.distance;
 
-      if(opacity_line > 0){        
-        
+      if(opacity_line > 0){
+
         /* style */
         var color_line = pJS.particles.line_linked.color_rgb_line;
         pJS.canvas.ctx.strokeStyle = 'rgba('+color_line.r+','+color_line.g+','+color_line.b+','+opacity_line+')';
         pJS.canvas.ctx.lineWidth = pJS.particles.line_linked.width;
         //pJS.canvas.ctx.lineCap = 'round'; /* performance issue */
-        
+
         /* path */
         pJS.canvas.ctx.beginPath();
         pJS.canvas.ctx.moveTo(p1.x, p1.y);
@@ -725,7 +753,7 @@ var pJS = function(tag_id, params){
       p2.vy += ay;
 
     }
-    
+
 
   }
 
@@ -805,7 +833,7 @@ var pJS = function(tag_id, params){
       if(dist_mouse <= pJS.interactivity.modes.bubble.distance){
 
         if(ratio >= 0 && pJS.interactivity.status == 'mousemove'){
-          
+
           /* size */
           if(pJS.interactivity.modes.bubble.size != pJS.particles.size.value){
 
@@ -854,7 +882,7 @@ var pJS = function(tag_id, params){
       if(pJS.interactivity.status == 'mouseleave'){
         init();
       }
-    
+
     }
 
     /* on click event */
@@ -933,7 +961,7 @@ var pJS = function(tag_id, params){
           repulseRadius = pJS.interactivity.modes.repulse.distance,
           velocity = 100,
           repulseFactor = clamp((1/repulseRadius)*(-1*Math.pow(dist_mouse/repulseRadius,2)+1)*repulseRadius*velocity, 0, 50);
-      
+
       var pos = {
         x: p.x + normVec.x * repulseFactor,
         y: p.y + normVec.y * repulseFactor
@@ -946,7 +974,7 @@ var pJS = function(tag_id, params){
         p.x = pos.x;
         p.y = pos.y;
       }
-    
+
     }
 
 
@@ -1001,7 +1029,7 @@ var pJS = function(tag_id, params){
         // }else{
         //   process();
         // }
-        
+
 
       }else{
 
@@ -1009,7 +1037,7 @@ var pJS = function(tag_id, params){
 
           p.vx = p.vx_i;
           p.vy = p.vy_i;
-        
+
         }
 
       }
@@ -1039,7 +1067,7 @@ var pJS = function(tag_id, params){
           pJS.canvas.ctx.strokeStyle = 'rgba('+color_line.r+','+color_line.g+','+color_line.b+','+opacity_line+')';
           pJS.canvas.ctx.lineWidth = pJS.particles.line_linked.width;
           //pJS.canvas.ctx.lineCap = 'round'; /* performance issue */
-          
+
           /* path */
           pJS.canvas.ctx.beginPath();
           pJS.canvas.ctx.moveTo(p.x, p.y);
@@ -1155,7 +1183,7 @@ var pJS = function(tag_id, params){
         }
 
       });
-        
+
     }
 
 
@@ -1240,7 +1268,7 @@ var pJS = function(tag_id, params){
   };
 
 
-  pJS.fn.vendors.drawShape = function(c, startX, startY, sideLength, sideCountNumerator, sideCountDenominator){
+  pJS.fn.vendors.drawShape = function(c, startX, startY, sideLength, sideCountNumerator, sideCountDenominator, angle){
 
     // By Programming Thomas - https://programmingthomas.wordpress.com/2013/04/03/n-sided-shapes/
     var sideCount = sideCountNumerator * sideCountDenominator;
@@ -1248,15 +1276,20 @@ var pJS = function(tag_id, params){
     var interiorAngleDegrees = (180 * (decimalSides - 2)) / decimalSides;
     var interiorAngle = Math.PI - Math.PI * interiorAngleDegrees / 180; // convert to radians
     c.save();
+
     c.beginPath();
     c.translate(startX, startY);
+    c.rotate(angle);
+    c.translate(-sideLength/2.2,-sideLength/5.4)
     c.moveTo(0,0);
+
     for (var i = 0; i < sideCount; i++) {
       c.lineTo(sideLength,0);
       c.translate(sideLength,0);
       c.rotate(interiorAngle);
     }
     //c.stroke();
+
     c.fill();
     c.restore();
 
@@ -1359,7 +1392,7 @@ var pJS = function(tag_id, params){
           pJS.fn.vendors.init();
           pJS.fn.vendors.draw();
         }
-        
+
       }
 
     }else{
@@ -1406,7 +1439,7 @@ var pJS = function(tag_id, params){
   pJS.fn.vendors.eventsListeners();
 
   pJS.fn.vendors.start();
-  
+
 
 
 };
@@ -1474,23 +1507,10 @@ function isInArray(value, array) {
 
 window.pJSDom = [];
 
-window.particlesJS = function(tag_id, params){
-
-  //console.log(params);
-
-  /* no string id? so it's object params, and set the id with default id */
-  if(typeof(tag_id) != 'string'){
-    params = tag_id;
-    tag_id = 'particles-js';
-  }
-
-  /* no id? set the id to default id */
-  if(!tag_id){
-    tag_id = 'particles-js';
-  }
+window.particlesJS = function(element, params){
 
   /* pJS elements */
-  var pJS_tag = document.getElementById(tag_id),
+  var pJS_tag = element,
       pJS_canvas_class = 'particles-js-canvas-el',
       exist_canvas = pJS_tag.getElementsByClassName(pJS_canvas_class);
 
@@ -1510,11 +1530,11 @@ window.particlesJS = function(tag_id, params){
   canvas_el.style.height = "100%";
 
   /* append canvas */
-  var canvas = document.getElementById(tag_id).appendChild(canvas_el);
+  var canvas = element.appendChild(canvas_el);
 
   /* launch particle.js */
   if(canvas != null){
-    var pjs = new pJS(tag_id, params);
+    var pjs = new pJS(element, params);
     pJSDom.push(pjs);
     return pjs;
   }
@@ -1530,8 +1550,8 @@ window.particlesJS.load = function(tag_id, path_config_json, callback){
     if(xhr.readyState == 4){
       if(xhr.status == 200){
         var params = JSON.parse(data.currentTarget.response);
-        window.particlesJS(tag_id, params);
-        if(callback) callback();
+        var pjs = window.particlesJS(tag_id, params);
+        if(callback) callback(pjs);
       }else{
         console.log('Error pJS - XMLHttpRequest status: '+xhr.status);
         console.log('Error pJS - File config not found');
